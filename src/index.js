@@ -104,7 +104,7 @@ fastify.get("/api/top-songs", async (request, reply) => {
 
 // Actual per-genre US chart feeds for Pacific's Arcade music discovery.
 // No keyword-search approximations or fabricated rankings.
-const genreCharts = { pop: "14", hiphop: "18", country: "6" };
+const genreCharts = { pop: "14", hiphop: "18", country: "6", rock: "21", rnb: "15", dance: "17", alternative: "20", latin: "12" };
 const genreChartCache = new Map();
 fastify.get("/api/genre-songs", async (request, reply) => {
   reply.header("Access-Control-Allow-Origin", "*");
