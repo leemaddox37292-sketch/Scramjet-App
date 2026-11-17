@@ -149,7 +149,7 @@ fastify.get("/api/tmdb/tv/:id/season/:season", async (request, reply) => {
   reply.header("Cross-Origin-Resource-Policy", "cross-origin");
   reply.header("Cache-Control", "public, max-age=3600");
   const id=String(request.params.id), season=String(request.params.season);
-  if (!/^\\d{1,12}$/.test(id) || !/^\\d{1,3}$/.test(season)) return reply.code(400).send({error:"invalid tv id or season"});
+  if (!/^\d{1,12}$/.test(id) || !/^\d{1,3}$/.test(season)) return reply.code(400).send({error:"invalid tv id or season"});
   const token=process.env.TMDB_READ_TOKEN || process.env.TMDB_API_READ_ACCESS_TOKEN;
   const apiKey=process.env.TMDB_API_KEY;
   if (!token && !apiKey) return reply.code(503).send({error:"tmdb metadata not configured"});
@@ -177,7 +177,7 @@ fastify.get("/api/tmdb/title-logo", async (request, reply) => {
   reply.header("Cache-Control", "public, max-age=86400");
   const type=String(request.query?.type||"");
   const id=String(request.query?.id||"");
-  if(!["movie","tv"].includes(type)||!/^\\d{1,12}$/.test(id))return reply.code(400).send({error:"invalid title"});
+  if(!["movie","tv"].includes(type)||!/^\d{1,12}$/.test(id))return reply.code(400).send({error:"invalid title"});
   const token=process.env.TMDB_READ_TOKEN||process.env.TMDB_API_READ_ACCESS_TOKEN;
   const key=process.env.TMDB_API_KEY;
   if(!token&&!key)return {logo:null,source:"tmdb",configured:false};
