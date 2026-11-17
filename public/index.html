@@ -1,66 +1,84 @@
 <!doctype html>
-<html>
-	<head>
-		<meta charset="utf-8" />
-		<meta
-			name="viewport"
-			content="width=device-width, initial-scale=1.0, shrink-to-fit=no"
-		/>
-		<title>Scramjet</title>
-
-		<link rel="shortcut icon" content="favicon.webp" />
-	
-		<script src="/scram/scramjet.all.js"></script>
-		<script src="/baremux/index.js"></script>
-		
-		<link rel="stylesheet" href="index.css" />
-		<script src="register-sw.js" defer></script>
-		<script src="search.js" defer></script>
-		<script src="index.js" defer></script>
-	</head>
-
-	<body>
-		<div title="Scramjet Logo" class="flex-center logo-wrapper header-center">
-			<img class="logo" src="sj.png" alt="Scramjet" />
-			<h1>Scramjet | MW</h1>
-		</div>
-		<div class="flex-center desc left-margin">
-			<p>
-				Scramjet is an experimental interception based web proxy designed to
-				evade internet censorship, bypass arbitrary web browser restrictions and
-				innovate web proxy technologies.
-			</p>
-		</div>
-
-		<form id="sj-form" class="flex-center">
-			<input
-				id="sj-search-engine"
-				value="https://www.google.com/search?q=%s"
-				type="hidden"
-			/>
-			<input id="sj-address" type="text" placeholder="Search the web freely" />
-		</form>
-		<div class="desc left-margin">
-			<p id="sj-error"></p>
-			<pre id="sj-error-code"></pre>
-		</div>
-		<footer>
-			<div>
-				<a
-					title="The Mercury Workshop GitHub organization"
-					href="https://github.com/MercuryWorkshop"
-					>Mercury Workshop</a
-				>
-				<a
-					title="The example demo app for Scramjet"
-					href="https://github.com/MercuryWorkshop/Scramjet-Demo"
-					>GitHub</a
-				>
-				<a title="License information" href="credits.html">Credits</a>
-			</div>
-			<div>
-				<span>Scramjet &copy; MW 2025</span>
-			</div>
-		</footer>
-	</body>
-</html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080706"><title>Pacific Browser</title>
+<script src="/scram/scramjet.all.js"></script><script src="/baremux/index.js"></script>
+<script src="/register-sw.js" defer></script><script src="/search.js" defer></script>
+<style>
+:root{color-scheme:dark;--gold:#ffaa00;--gold2:#b57700;--edge:#5c3b05;--bg:#060606;--panel:#100d08;--text:#e9e2d8}
+*{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font:14px system-ui,Segoe UI,Arial,sans-serif}button,input{font:inherit}button{cursor:pointer;color:#ddd;background:#080808;border:1px solid #3d2b0e;border-radius:9px}button:hover{border-color:var(--gold);color:var(--gold)}button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+#app{height:100dvh;display:flex;flex-direction:column;min-height:0}
+#tabs{height:44px;display:flex;align-items:end;gap:5px;padding:3px 10px 0;border-bottom:1px solid #3d2908;overflow-x:auto;scrollbar-width:thin;scrollbar-color:var(--edge) transparent;flex-shrink:0}
+.tab{max-width:230px;min-width:116px;height:40px;padding:0 10px 0 15px;border:1px solid #393017;border-bottom:0;border-radius:9px 9px 0 0;display:flex;align-items:center;justify-content:space-between;gap:8px;background:#100e0a;color:#a99c8b;white-space:nowrap;flex:0 1 220px}
+.tab.active{background:linear-gradient(180deg,#33240a,#1c160d);border-color:var(--gold);color:var(--gold)}.tab-label{overflow:hidden;text-overflow:ellipsis}.close-tab{border:0;background:none;flex:0 0 auto;padding:3px 5px;color:inherit;font-size:16px}.add-tab{height:36px;min-width:38px;margin-bottom:3px;font-size:25px}
+#toolbar{height:61px;display:flex;align-items:center;padding:8px 12px;gap:8px;border-bottom:1px solid #513607;flex-shrink:0;background:#080705}
+.tool{width:39px;height:39px;font-size:18px;flex-shrink:0}#address{flex:1;min-width:80px;height:40px;padding:0 15px;background:#130f09;color:#eee;border:1px solid #523607;border-radius:10px;outline:none}#address:focus{border-color:var(--gold);box-shadow:0 0 0 2px #a56c1738}
+#view{position:relative;flex:1;min-height:0;overflow:hidden} .page{position:absolute;inset:0;display:none;background:#050505}.page.active{display:block}.page iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+.home{height:100%;overflow:auto;display:flex;align-items:center;justify-content:center;padding:32px 18px;background:radial-gradient(ellipse at 24% 60%,#241807 0,transparent 31%),#030303}
+.home-inner{width:min(680px,100%);text-align:center;position:relative}
+.mark{height:74px;display:grid;place-items:center;font-size:55px;color:var(--gold);opacity:.84;filter:drop-shadow(0 0 25px #ae6b0750)}
+h1{color:var(--gold);font-size:clamp(31px,5vw,48px);letter-spacing:.29em;font-weight:400;margin:10px 0 35px;padding-left:.29em;text-transform:lowercase}
+.home-search{width:min(500px,100%);height:54px;padding:0 16px;background:#120e08;border:1px solid #66420c;border-radius:9px;color:var(--text);outline:none}.home-search:focus{border-color:var(--gold)}
+.shortcuts{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin:34px auto}.shortcut{width:78px;min-height:65px;border:0;background:transparent;display:grid;justify-items:center;align-content:center;gap:8px;font-size:11px;color:#a99a85}.shortcut:hover{color:var(--gold)}.shortcut-icon{font-size:24px;color:#ded2bf}
+#status{position:fixed;z-index:100;bottom:14px;left:50%;transform:translateX(-50%);padding:10px 15px;border:1px solid #7b480a;border-radius:9px;background:#171007;color:#ffca66;box-shadow:0 8px 24px #0009;display:none;max-width:min(90vw,650px);text-align:center}
+#status.show{display:block}
+#loading{display:none;position:absolute;z-index:20;right:16px;bottom:16px;padding:8px 12px;background:#0c0c0cef;border:1px solid var(--edge);border-radius:9px;color:var(--gold)}
+@media(max-width:560px){#toolbar{gap:4px;padding:6px}.tool{width:30px;height:35px;font-size:15px}#address{height:36px;padding:0 7px;font-size:12px}.tab{min-width:85px}.shortcuts{gap:3px}.shortcut{width:69px}}
+</style></head><body>
+<div id="app"><div id="tabs" role="tablist" aria-label="Browser tabs"><button class="add-tab" id="add" aria-label="New tab">+</button></div>
+<div id="toolbar"><button class="tool" id="back" title="Back">‹</button><button class="tool" id="forward" title="Forward">›</button><button class="tool" id="reload" title="Reload">⟳</button><button class="tool" id="home" title="Home">⌂</button><input id="address" spellcheck="false" autocomplete="off" aria-label="Search or enter URL" placeholder="Search or enter URL"><button class="tool" id="full" title="Fullscreen">⛶</button><button class="tool" id="open" title="Open current page in new tab">↗</button></div>
+<div id="view"><span id="loading">Connecting to Scramjet…</span></div></div><div id="status" role="status"></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const tabs=[];let active=null,sequence=0,ready=null;
+const {ScramjetController}=$scramjetLoadController();
+const controller=new ScramjetController({files:{wasm:"/scram/scramjet.wasm.wasm",all:"/scram/scramjet.all.js",sync:"/scram/scramjet.sync.js"}});
+controller.init();
+const connection=new BareMux.BareMuxConnection("/baremux/worker.js");
+function notice(msg){$("status").textContent=msg;$("status").classList.add("show");clearTimeout(notice.timer);notice.timer=setTimeout(()=>$("status").classList.remove("show"),6500)}
+function resolveAddress(input){const q=input.trim();if(!q)return "";if(/^javascript:|^data:|^file:/i.test(q))throw Error("This URL scheme is not supported.");return search(q,"https://www.google.com/search?q=%s")}
+async function ensureProxy(){
+ if(ready)return ready;
+ ready=(async()=>{
+  await registerSW();
+  const wisp=(location.protocol==="https:"?"wss":"ws")+"://"+location.host+"/wisp/";
+  if((await connection.getTransport())!=="/libcurl/index.mjs")await connection.setTransport("/libcurl/index.mjs",[{websocket:wisp}]);
+ })().catch(e=>{ready=null;throw e});
+ return ready;
+}
+const links=[["▶","YouTube","https://youtube.com"],["⌘","GitHub","https://github.com"],["◈","Discord","https://discord.com"],["𝕏","X","https://x.com"],["●","Reddit","https://reddit.com"],["◎","Instagram","https://instagram.com"]];
+function homeMarkup(tab){
+ const home=document.createElement("div");home.className="home";
+ const inner=document.createElement("div");inner.className="home-inner";
+ const mark=document.createElement("div");mark.className="mark";mark.textContent="✦";inner.append(mark);
+ const title=document.createElement("h1");title.textContent="pacific browser";inner.append(title);
+ const box=document.createElement("input");box.className="home-search";box.placeholder="Search or enter URL...";box.setAttribute("aria-label","Home page search");box.addEventListener("keydown",e=>{if(e.key==="Enter")navigate(box.value)});inner.append(box);
+ const picks=document.createElement("div");picks.className="shortcuts";
+ for(const [icon,label,url] of links){const b=document.createElement("button");b.className="shortcut";const i=document.createElement("span");i.className="shortcut-icon";i.textContent=icon;const t=document.createElement("span");t.textContent=label.toLowerCase();b.append(i,t);b.onclick=()=>navigate(url);picks.append(b)}
+ inner.append(picks);home.append(inner);return home;
+}
+function createTab(){
+ const tab={id:++sequence,title:"New Tab",url:"",page:document.createElement("section"),proxy:null};
+ tab.page.className="page";tab.page.dataset.id=tab.id;tab.page.append(homeMarkup(tab));$("view").append(tab.page);
+ const button=document.createElement("button");button.className="tab";button.setAttribute("role","tab");const label=document.createElement("span");label.className="tab-label";label.textContent=tab.title;const close=document.createElement("button");close.className="close-tab";close.type="button";close.textContent="×";close.setAttribute("aria-label","Close tab");close.onclick=e=>{e.stopPropagation();closeTab(tab)};button.append(label,close);button.onclick=()=>activate(tab);tab.button=button;tab.label=label;$("tabs").insertBefore(button,$("add"));tabs.push(tab);activate(tab);return tab;
+}
+function activate(tab){active=tab;for(const t of tabs){const yes=t===tab;t.page.classList.toggle("active",yes);t.button.classList.toggle("active",yes);t.button.setAttribute("aria-selected",yes?"true":"false")} $("address").value=tab.url;document.title=tab.title+" · Pacific Browser";}
+function closeTab(tab){const i=tabs.indexOf(tab);if(i<0)return;tabs.splice(i,1);tab.page.remove();tab.button.remove();if(active===tab){if(tabs.length)activate(tabs[Math.min(i,tabs.length-1)]);else createTab()}}
+async function navigate(value){const tab=active;if(!tab)return;let url;try{url=resolveAddress(value)}catch(e){notice(e.message);return}if(!url)return;tab.url=url;tab.title=(()=>{try{return new URL(url).hostname}catch{return "Search"}})();tab.label.textContent=tab.title;$("address").value=url;$("loading").style.display="block";
+ try{await ensureProxy();if(!tabs.includes(tab))return;
+   if(!tab.proxy){tab.page.replaceChildren();tab.proxy=controller.createFrame();tab.proxy.frame.title="Browser: "+tab.title;tab.page.append(tab.proxy.frame)}
+   tab.proxy.go(url);
+ }catch(e){notice("Proxy could not load: "+(e?.message||String(e)))}finally{$("loading").style.display="none"}
+}
+function home(){const tab=active;if(!tab)return;tab.url="";tab.title="New Tab";tab.label.textContent=tab.title;tab.proxy=null;tab.page.replaceChildren(homeMarkup(tab));activate(tab)}
+$("add").onclick=createTab;$("home").onclick=home;
+$("address").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();navigate(e.currentTarget.value)}});
+$("back").onclick=()=>{try{active?.proxy?.frame.contentWindow.history.back()}catch{notice("Back isn't available on this page.")}};
+$("forward").onclick=()=>{try{active?.proxy?.frame.contentWindow.history.forward()}catch{notice("Forward isn't available on this page.")}};
+$("reload").onclick=()=>{if(active?.proxy){try{active.proxy.frame.contentWindow.location.reload()}catch{navigate(active.url)}}};
+$("full").onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else $("app").requestFullscreen?.().catch(()=>notice("Fullscreen is unavailable here."))};
+$("open").onclick=()=>window.open(location.href,"_blank","noopener,noreferrer");
+window.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="t"){e.preventDefault();createTab()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="l"){e.preventDefault();$("address").focus();$("address").select()}});
+createTab();
+</script></body></html>
