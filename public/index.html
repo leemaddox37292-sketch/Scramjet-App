@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080706"><title>Pacific Browser</title>
+<meta name="theme-color" content="#080706"><title>Pacific Explorer</title>
 <script src="/scram/scramjet.all.js"></script><script src="/baremux/index.js"></script>
 <script src="/register-sw.js" defer></script><script src="/search.js" defer></script>
 <style>
@@ -24,6 +24,11 @@ h1{color:var(--gold);font-size:clamp(31px,5vw,48px);letter-spacing:.29em;font-we
 #status.show{display:block}
 #loading{display:none;position:absolute;z-index:20;right:16px;bottom:16px;padding:8px 12px;background:#0c0c0cef;border:1px solid var(--edge);border-radius:9px;color:var(--gold)}
 @media(max-width:560px){#toolbar{gap:4px;padding:6px}.tool{width:30px;height:35px;font-size:15px}#address{height:36px;padding:0 7px;font-size:12px}.tab{min-width:85px}.shortcuts{gap:3px}.shortcut{width:69px}}
+/* Pacific Explorer: original ocean-glass theme */
+:root{--gold:#69ff88;--gold2:#27c852;--edge:#244b35;--bg:#04110c;--panel:#0b2117;--text:#e8f8ed}
+#tabs{border-bottom-color:#21472e;background:#06170e}.tab{background:#092017;border-color:#1e4630}.tab.active{background:linear-gradient(180deg,#1a4830,#10281d);color:var(--gold)}
+#toolbar{background:#06150d;border-bottom-color:#244b35}#address{background:#0b2117;border-color:#285c3c}
+.home{background:radial-gradient(ellipse at 20% 58%,#103a2a 0,transparent 32%),radial-gradient(ellipse at 86% 30%,#092d38 0,transparent 35%),#03100b}
 </style></head><body>
 <div id="app"><div id="tabs" role="tablist" aria-label="Browser tabs"><button class="add-tab" id="add" aria-label="New tab">+</button></div>
 <div id="toolbar"><button class="tool" id="back" title="Back">‹</button><button class="tool" id="forward" title="Forward">›</button><button class="tool" id="reload" title="Reload">⟳</button><button class="tool" id="home" title="Home">⌂</button><input id="address" spellcheck="false" autocomplete="off" aria-label="Search or enter URL" placeholder="Search or enter URL"><button class="tool" id="full" title="Fullscreen">⛶</button><button class="tool" id="open" title="Open current page in new tab">↗</button></div>
@@ -52,7 +57,7 @@ function homeMarkup(tab){
  const home=document.createElement("div");home.className="home";
  const inner=document.createElement("div");inner.className="home-inner";
  const mark=document.createElement("div");mark.className="mark";mark.textContent="✦";inner.append(mark);
- const title=document.createElement("h1");title.textContent="pacific browser";inner.append(title);
+ const title=document.createElement("h1");title.textContent="pacific explorer";inner.append(title);
  const box=document.createElement("input");box.className="home-search";box.placeholder="Search or enter URL...";box.setAttribute("aria-label","Home page search");box.addEventListener("keydown",e=>{if(e.key==="Enter")navigate(box.value)});inner.append(box);
  const picks=document.createElement("div");picks.className="shortcuts";
  for(const [icon,label,url] of links){const b=document.createElement("button");b.className="shortcut";const i=document.createElement("span");i.className="shortcut-icon";i.textContent=icon;const t=document.createElement("span");t.textContent=label.toLowerCase();b.append(i,t);b.onclick=()=>navigate(url);picks.append(b)}
@@ -81,4 +86,7 @@ $("full").onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();e
 $("open").onclick=()=>window.open(location.href,"_blank","noopener,noreferrer");
 window.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="t"){e.preventDefault();createTab()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="l"){e.preventDefault();$("address").focus();$("address").select()}});
 createTab();
+// Pacific Explorer deep links from the CloudFront arcade shell.
+const launchTarget=new URLSearchParams(location.search).get("url");
+if(launchTarget && /^https?:\/\//i.test(launchTarget)) navigate(launchTarget);
 </script></body></html>
