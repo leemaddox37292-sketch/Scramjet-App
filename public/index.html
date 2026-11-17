@@ -30,6 +30,7 @@ h1{color:var(--gold);font-size:clamp(31px,5vw,48px);letter-spacing:.29em;font-we
 #toolbar{background:#06150d;border-bottom-color:#244b35}#address{background:#0b2117;border-color:#285c3c}
 .home{background:radial-gradient(ellipse at 20% 58%,#103a2a 0,transparent 32%),radial-gradient(ellipse at 86% 30%,#092d38 0,transparent 35%),#03100b}
 .pacific-embedded #tabs,.pacific-embedded #toolbar{display:none!important}.pacific-embedded #view{height:100dvh}.pacific-embedded #app{height:100dvh}.pacific-embedded .home{min-height:100dvh}
+.pacific-embedded .page iframe{z-index:10;pointer-events:auto!important;touch-action:auto!important}.pacific-embedded #view{overflow:hidden}.page iframe{pointer-events:auto!important;touch-action:auto!important}.page{pointer-events:auto!important}.home-search,.shortcut,.tool,.tab,.add-tab{min-height:42px;touch-action:manipulation}.page .home{pointer-events:auto!important}
 </style></head><body>
 <div id="app"><div id="tabs" role="tablist" aria-label="Browser tabs"><button class="add-tab" id="add" aria-label="New tab">+</button></div>
 <div id="toolbar"><button class="tool" id="back" title="Back">‹</button><button class="tool" id="forward" title="Forward">›</button><button class="tool" id="reload" title="Reload">⟳</button><button class="tool" id="home" title="Home">⌂</button><input id="address" spellcheck="false" autocomplete="off" aria-label="Search or enter URL" placeholder="Search or enter URL"><button class="tool" id="full" title="Fullscreen">⛶</button><button class="tool" id="open" title="Open current page in new tab">↗</button></div>
@@ -94,6 +95,8 @@ const launchTarget=launchParams.get("url");
 if(launchParams.get("embed")==="1")document.documentElement.classList.add("pacific-embedded");
 
 // Embedded Arcade integration: register the proxy once, then accept searches without recreating the browser.
+const isPlayerEmbed=launchParams.get("player")==="1";
+if(isPlayerEmbed)document.documentElement.classList.add("pacific-embedded");
 const isArcadeEmbed=launchParams.get("embed")==="1";
 function notifyArcade(event,message=""){if(!isArcadeEmbed||window.parent===window)return;window.parent.postMessage({source:"pacific-explorer",event,message},document.referrer?new URL(document.referrer).origin:"*")}
 if(isArcadeEmbed){
@@ -110,5 +113,5 @@ if(isArcadeEmbed){
     else if(cmd==="forward"){document.getElementById("forward")?.click()}
   });
 }
-if(!isArcadeEmbed && launchTarget && /^https?:\/\//i.test(launchTarget)) navigate(launchTarget);
+if((!isArcadeEmbed || isPlayerEmbed) && launchTarget && /^https?:\/\//i.test(launchTarget)) navigate(launchTarget);
 </script></body></html>
