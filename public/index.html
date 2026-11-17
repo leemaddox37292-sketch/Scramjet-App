@@ -91,5 +91,23 @@ createTab();
 const launchParams=new URLSearchParams(location.search);
 const launchTarget=launchParams.get("url");
 if(launchParams.get("embed")==="1")document.documentElement.classList.add("pacific-embedded");
-if(launchTarget && /^https?:\/\//i.test(launchTarget)) navigate(launchTarget);
+
+// Embedded Arcade integration: register the proxy once, then accept searches without recreating the browser.
+const isArcadeEmbed=launchParams.get("embed")==="1";
+function notifyArcade(event,message=""){if(!isArcadeEmbed||window.parent===window)return;window.parent.postMessage({source:"pacific-explorer",event,message},"*")}
+if(isArcadeEmbed){
+  // Send readiness only after the service worker and Wisp transport are prepared.
+  ensureProxy().then(()=>notifyArcade("ready")).catch(e=>notifyArcade("error",e?.message||String(e)));
+  window.addEventListener("message",async event=>{
+    if(event.source!==window.parent||event.data?.source!=="pacific-arcade")return;
+    const cmd=event.data.cmd;
+    if(cmd==="navigate" && typeof event.data.url==="string"){
+      try{await ensureProxy();await navigate(event.data.url)}catch(e){notifyArcade("error",e?.message||String(e))}
+    }else if(cmd==="reload"){
+      try{if(active?.url)await navigate(active.url)}catch(e){notifyArcade("error",e?.message||String(e))}
+    }else if(cmd==="back"){document.getElementById("back")?.click()}
+    else if(cmd==="forward"){document.getElementById("forward")?.click()}
+  });
+}
+if(!isArcadeEmbed && launchTarget && /^https?:\/\//i.test(launchTarget)) navigate(launchTarget);
 </script></body></html>
