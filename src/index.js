@@ -171,36 +171,80 @@ fastify.get("/api/tmdb/tv/:id/season/:season", async (request, reply) => {
 
 
 const tmdbLogoCache = new Map();
+function normalizedMediaTitle(value) {
+  return String(value||"").normalize("NFKD").toLowerCase()
+    .replace(/[^a-z0-9]+/g," ").replace(/\s+/g," ").trim();
+}
+async function findKeylessLogo({type, title, year, imdbId}) {
+  let resolvedId=/^tt\d{7,10}$/i.test(imdbId) ? imdbId : "";
+  if (!resolvedId && title) {
+    // Cinemeta catalog is keyed by IMDb; accept only an exact title and, when supplied,
+    // a matching release year. A loosely similar title can show the wrong studio logo.
+    const catalogType=type==="tv"?"series":"movie";
+    const url="https://v3-cinemeta.strem.io/catalog/"+catalogType+"/top/search="+encodeURIComponent(title)+".json";
+    const response=await fetch(url,{signal:AbortSignal.timeout(8000),headers:{Accept:"application/json"}});
+    if(!response.ok)throw Error("catalog search "+response.status);
+    const data=await response.json();
+    const target=normalizedMediaTitle(title);
+    const candidates=(Array.isArray(data?.metas)?data.metas:[])
+      .filter(x=>/^tt\d{7,10}$/i.test(String(x.id||""))&&normalizedMediaTitle(x.name)===target);
+    const y=Number(year);
+    const exactYear=Number.isInteger(y)&&y>1900
+      ? candidates.filter(x=>Math.abs(Number(String(x.releaseInfo||x.year||x.released||"").slice(0,4))-y)<=1)
+      : candidates;
+    if(exactYear.length===1)resolvedId=exactYear[0].id;
+    else if(!Number.isInteger(y)&&candidates.length===1)resolvedId=candidates[0].id;
+  }
+  if(!resolvedId)return null;
+  // MetaHub provides existing transparent title logos (not generated or overlaid text).
+  const logo="https://images.metahub.space/logo/medium/"+resolvedId+"/img";
+  const check=await fetch(logo,{signal:AbortSignal.timeout(8000),headers:{Accept:"image/*"}});
+  const contentType=check.headers.get("content-type")||"";
+  if(!check.ok||!contentType.toLowerCase().startsWith("image/"))return null;
+  await check.body?.cancel();
+  return logo;
+}
 fastify.get("/api/tmdb/title-logo", async (request, reply) => {
-  reply.header("Access-Control-Allow-Origin", "*");
-  reply.header("Cross-Origin-Resource-Policy", "cross-origin");
-  reply.header("Cache-Control", "public, max-age=86400");
+  reply.header("Access-Control-Allow-Origin","*");
+  reply.header("Cross-Origin-Resource-Policy","cross-origin");
+  reply.header("Cache-Control","public, max-age=3600");
   const type=String(request.query?.type||"");
   const id=String(request.query?.id||"");
+  const title=String(request.query?.title||"").slice(0,160);
+  const year=String(request.query?.year||"").slice(0,4);
+  const imdbId=String(request.query?.imdb||"").slice(0,20);
   if(!["movie","tv"].includes(type)||!/^\d{1,12}$/.test(id))return reply.code(400).send({error:"invalid title"});
+  const cacheKey=type+":"+id+":"+imdbId+":"+title+":"+year;
+  const entry=tmdbLogoCache.get(cacheKey);
+  if(entry&&entry.expires>Date.now())return entry.result;
+  let logo=null,source="none";
   const token=process.env.TMDB_READ_TOKEN||process.env.TMDB_API_READ_ACCESS_TOKEN;
   const key=process.env.TMDB_API_KEY;
-  if(!token&&!key)return {logo:null,source:"tmdb",configured:false};
-  const cacheKey=type+":"+id;
-  const entry=tmdbLogoCache.get(cacheKey);
-  if(entry&&entry.expire>Date.now())return entry.result;
-  try{
-    const url=new URL("https://api.themoviedb.org/3/"+type+"/"+id+"/images");
-    url.searchParams.set("include_image_language","en,null");
-    if(!token)url.searchParams.set("api_key",key);
-    const headers={Accept:"application/json"};
-    if(token)headers.Authorization="Bearer "+token;
-    const res=await fetch(url,{headers,signal:AbortSignal.timeout(8500)});
-    if(!res.ok)throw Error("tmdb images "+res.status);
-    const data=await res.json();
-    const logos=(Array.isArray(data.logos)?data.logos:[]).filter(x=>x.file_path);
-    const ranked=logos.sort((a,b)=>((a.iso_639_1==="en"?100:0)+(a.vote_average||0)) - ((b.iso_639_1==="en"?100:0)+(b.vote_average||0)));
-    ranked.reverse();
-    const file=ranked[0]?.file_path||null;
-    const result={logo:file?"https://image.tmdb.org/t/p/w500"+file:null,source:"tmdb",configured:true};
-    tmdbLogoCache.set(cacheKey,{result,expire:Date.now()+86400000});
-    return result;
-  }catch(error){request.log.warn({error:String(error)},"tmdb logo lookup failed");return reply.code(502).send({logo:null,error:"logo unavailable"})}
+  if(token||key){
+    try{
+      const url=new URL("https://api.themoviedb.org/3/"+type+"/"+id+"/images");
+      url.searchParams.set("include_image_language","en,null");
+      if(!token)url.searchParams.set("api_key",key);
+      const headers={Accept:"application/json"};
+      if(token)headers.Authorization="Bearer "+token;
+      const response=await fetch(url,{headers,signal:AbortSignal.timeout(8000)});
+      if(response.ok){
+        const data=await response.json();
+        const logos=(Array.isArray(data.logos)?data.logos:[]).filter(x=>x.file_path);
+        logos.sort((a,b)=>(Number(b.iso_639_1==="en")-Number(a.iso_639_1==="en"))||((b.vote_average||0)-(a.vote_average||0)));
+        if(logos.length){logo="https://image.tmdb.org/t/p/w500"+logos[0].file_path;source="tmdb"}
+      }
+    }catch(error){request.log.warn({error:String(error)},"tmdb logo lookup failed")}
+  }
+  if(!logo){
+    try{
+      logo=await findKeylessLogo({type,title,year,imdbId});
+      if(logo)source="metahub";
+    }catch(error){request.log.warn({error:String(error)},"keyless logo lookup failed")}
+  }
+  const result={logo,source,configured:Boolean(token||key)};
+  tmdbLogoCache.set(cacheKey,{result,expires:Date.now()+(logo?86400000:1800000)});
+  return result;
 });
 
 fastify.setNotFoundHandler((res, reply) => {
