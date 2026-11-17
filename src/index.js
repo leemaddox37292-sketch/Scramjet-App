@@ -101,6 +101,48 @@ fastify.get("/api/top-songs", async (request, reply) => {
   return reply.code(503).send({ error: "chart feed temporarily unavailable" });
 });
 
+
+// Actual per-genre US chart feeds for Pacific's Arcade music discovery.
+// No keyword-search approximations or fabricated rankings.
+const genreCharts = { pop: "14", hiphop: "18", country: "6" };
+const genreChartCache = new Map();
+fastify.get("/api/genre-songs", async (request, reply) => {
+  reply.header("Access-Control-Allow-Origin", "*");
+  reply.header("Cross-Origin-Resource-Policy", "cross-origin");
+  reply.header("Cache-Control", "public, max-age=600");
+  const genre = String(request.query?.genre || "").toLowerCase();
+  if (!Object.hasOwn(genreCharts, genre)) return reply.code(400).send({ error: "unknown genre" });
+  const cached = genreChartCache.get(genre);
+  if (cached && cached.expire > Date.now()) return cached.data;
+  const id = genreCharts[genre];
+  const feeds = [
+    "https://rss.itunes.apple.com/api/v1/us/apple-music/top-songs/" + id + "/40/json",
+    "https://itunes.apple.com/us/rss/topsongs/limit=40/genre=" + id + "/json",
+    "https://rss.itunes.apple.com/api/v1/us/itunes-music/top-songs/" + id + "/40/json",
+  ];
+  for (const url of feeds) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(8500), headers: { Accept: "application/json" } });
+      if (!res.ok) throw new Error("upstream status " + res.status);
+      const feed = await res.json();
+      let songs = Array.isArray(feed?.feed?.results)
+        ? feed.feed.results.map(x => ({ id: String(x.id || ""), name: x.name, artistName: x.artistName, artworkUrl100: x.artworkUrl100 || "", url: x.url || "" }))
+        : Array.isArray(feed?.feed?.entry)
+          ? feed.feed.entry.map((x, i) => ({ id: String(x?.id?.attributes?.["im:id"] || i), name: x?.["im:name"]?.label || "", artistName: x?.["im:artist"]?.label || "", artworkUrl100: (x?.["im:image"] || []).at(-1)?.label || "", url: x?.id?.label || "" }))
+          : [];
+      songs = songs.filter(x => x.name && x.artistName).slice(0, 40);
+      if (songs.length < 6) throw new Error("upstream returned too few songs");
+      const data = { genre, songs, fetchedAt: new Date().toISOString(), source: new URL(url).hostname };
+      genreChartCache.set(genre, { data, expire: Date.now() + 30 * 60 * 1000 });
+      return data;
+    } catch (err) {
+      request.log.warn({ genre, url, error: String(err) }, "genre chart failed");
+    }
+  }
+  if (cached?.data) return cached.data;
+  return reply.code(503).send({ error: "genre chart unavailable" });
+});
+
 fastify.setNotFoundHandler((res, reply) => {
 	return reply.code(404).type("text/html").sendFile("404.html");
 });
