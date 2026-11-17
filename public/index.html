@@ -86,7 +86,19 @@ $("add").onclick=createTab;$("home").onclick=home;
 $("address").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();navigate(e.currentTarget.value)}});
 $("back").onclick=()=>{try{active?.proxy?.frame.contentWindow.history.back()}catch{notice("Back isn't available on this page.")}};
 $("forward").onclick=()=>{try{active?.proxy?.frame.contentWindow.history.forward()}catch{notice("Forward isn't available on this page.")}};
-$("reload").onclick=()=>{if(active?.proxy){try{active.proxy.frame.contentWindow.location.reload()}catch{navigate(active.url)}}};
+async function reloadActivePage(){
+ const tab=active;
+ if(!tab?.url)return;
+ // Rebuild the Scramjet frame itself: frame.location.reload() can be blocked or
+ // can reload a proxy shell without re-requesting the current destination.
+ try{
+   tab.proxy?.frame?.remove();
+   tab.proxy=null;
+   tab.page.replaceChildren();
+   await navigate(tab.url);
+ }catch(e){notice("Unable to refresh: "+(e?.message||String(e)))}
+}
+$("reload").onclick=reloadActivePage;
 $("full").onclick=()=>{if(document.fullscreenElement)document.exitFullscreen();else $("app").requestFullscreen?.().catch(()=>notice("Fullscreen is unavailable here."))};
 $("open").onclick=()=>window.open(location.href,"_blank","noopener,noreferrer");
 window.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="t"){e.preventDefault();createTab()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="l"){e.preventDefault();$("address").focus();$("address").select()}});
@@ -110,7 +122,7 @@ if(isArcadeEmbed){
     if(cmd==="navigate" && typeof event.data.url==="string"){
       try{await ensureProxy();await navigate(event.data.url)}catch(e){notifyArcade("error",e?.message||String(e))}
     }else if(cmd==="reload"){
-      try{if(active?.url)await navigate(active.url)}catch(e){notifyArcade("error",e?.message||String(e))}
+      try{await reloadActivePage()}catch(e){notifyArcade("error",e?.message||String(e))}
     }else if(cmd==="back"){document.getElementById("back")?.click()}
     else if(cmd==="forward"){document.getElementById("forward")?.click()}
   });
