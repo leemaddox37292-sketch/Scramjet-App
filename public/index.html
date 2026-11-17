@@ -50,6 +50,8 @@ async function ensureProxy(){
  if(ready)return ready;
  ready=(async()=>{
   await registerSW();
+  // Wait for SW activation before the first proxied navigation.
+  await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error("Service worker activation was blocked; open Pacific Explorer in a new window.")),9000))]);
   const wisp=(location.protocol==="https:"?"wss":"ws")+"://"+location.host+"/wisp/";
   if((await connection.getTransport())!=="/libcurl/index.mjs")await connection.setTransport("/libcurl/index.mjs",[{websocket:wisp}]);
  })().catch(e=>{ready=null;throw e});
@@ -75,7 +77,7 @@ function activate(tab){active=tab;for(const t of tabs){const yes=t===tab;t.page.
 function closeTab(tab){const i=tabs.indexOf(tab);if(i<0)return;tabs.splice(i,1);tab.page.remove();tab.button.remove();if(active===tab){if(tabs.length)activate(tabs[Math.min(i,tabs.length-1)]);else createTab()}}
 async function navigate(value){const tab=active;if(!tab)return;let url;try{url=resolveAddress(value)}catch(e){notice(e.message);return}if(!url)return;tab.url=url;tab.title=(()=>{try{return new URL(url).hostname}catch{return "Search"}})();tab.label.textContent=tab.title;$("address").value=url;$("loading").style.display="block";
  try{await ensureProxy();if(!tabs.includes(tab))return;
-   if(!tab.proxy){tab.page.replaceChildren();tab.proxy=controller.createFrame();tab.proxy.frame.title="Browser: "+tab.title;tab.page.append(tab.proxy.frame)}
+   if(!tab.proxy){tab.page.replaceChildren();tab.proxy=controller.createFrame();tab.proxy.frame.title="Browser: "+tab.title;tab.proxy.frame.tabIndex=0;tab.proxy.frame.style.pointerEvents="auto";tab.proxy.frame.style.touchAction="auto";tab.page.append(tab.proxy.frame)}
    tab.proxy.go(url);
  }catch(e){notice("Proxy could not load: "+(e?.message||String(e)))}finally{$("loading").style.display="none"}
 }
