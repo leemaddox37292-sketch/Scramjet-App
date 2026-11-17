@@ -29,6 +29,7 @@ h1{color:var(--gold);font-size:clamp(31px,5vw,48px);letter-spacing:.29em;font-we
 #tabs{border-bottom-color:#21472e;background:#06170e}.tab{background:#092017;border-color:#1e4630}.tab.active{background:linear-gradient(180deg,#1a4830,#10281d);color:var(--gold)}
 #toolbar{background:#06150d;border-bottom-color:#244b35}#address{background:#0b2117;border-color:#285c3c}
 .home{background:radial-gradient(ellipse at 20% 58%,#103a2a 0,transparent 32%),radial-gradient(ellipse at 86% 30%,#092d38 0,transparent 35%),#03100b}
+.pacific-embedded #tabs,.pacific-embedded #toolbar{display:none!important}.pacific-embedded #view{height:100dvh}.pacific-embedded #app{height:100dvh}.pacific-embedded .home{min-height:100dvh}
 </style></head><body>
 <div id="app"><div id="tabs" role="tablist" aria-label="Browser tabs"><button class="add-tab" id="add" aria-label="New tab">+</button></div>
 <div id="toolbar"><button class="tool" id="back" title="Back">‹</button><button class="tool" id="forward" title="Forward">›</button><button class="tool" id="reload" title="Reload">⟳</button><button class="tool" id="home" title="Home">⌂</button><input id="address" spellcheck="false" autocomplete="off" aria-label="Search or enter URL" placeholder="Search or enter URL"><button class="tool" id="full" title="Fullscreen">⛶</button><button class="tool" id="open" title="Open current page in new tab">↗</button></div>
@@ -42,7 +43,7 @@ const controller=new ScramjetController({files:{wasm:"/scram/scramjet.wasm.wasm"
 controller.init();
 const connection=new BareMux.BareMuxConnection("/baremux/worker.js");
 function notice(msg){$("status").textContent=msg;$("status").classList.add("show");clearTimeout(notice.timer);notice.timer=setTimeout(()=>$("status").classList.remove("show"),6500)}
-function resolveAddress(input){const q=input.trim();if(!q)return "";if(/^javascript:|^data:|^file:/i.test(q))throw Error("This URL scheme is not supported.");return search(q,"https://www.google.com/search?q=%s")}
+function resolveAddress(input){const q=input.trim();if(!q)return "";if(/^javascript:|^data:|^file:/i.test(q))throw Error("This URL scheme is not supported.");return search(q,"https://duckduckgo.com/?q=%s")}
 async function ensureProxy(){
  if(ready)return ready;
  ready=(async()=>{
@@ -58,7 +59,7 @@ function homeMarkup(tab){
  const inner=document.createElement("div");inner.className="home-inner";
  const mark=document.createElement("div");mark.className="mark";mark.textContent="✦";inner.append(mark);
  const title=document.createElement("h1");title.textContent="pacific explorer";inner.append(title);
- const box=document.createElement("input");box.className="home-search";box.placeholder="Search or enter URL...";box.setAttribute("aria-label","Home page search");box.addEventListener("keydown",e=>{if(e.key==="Enter")navigate(box.value)});inner.append(box);
+ const box=document.createElement("input");box.className="home-search";box.placeholder="Search DuckDuckGo or enter URL...";box.setAttribute("aria-label","Home page search");box.addEventListener("keydown",e=>{if(e.key==="Enter")navigate(box.value)});inner.append(box);
  const picks=document.createElement("div");picks.className="shortcuts";
  for(const [icon,label,url] of links){const b=document.createElement("button");b.className="shortcut";const i=document.createElement("span");i.className="shortcut-icon";i.textContent=icon;const t=document.createElement("span");t.textContent=label.toLowerCase();b.append(i,t);b.onclick=()=>navigate(url);picks.append(b)}
  inner.append(picks);home.append(inner);return home;
@@ -87,6 +88,8 @@ $("open").onclick=()=>window.open(location.href,"_blank","noopener,noreferrer");
 window.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="t"){e.preventDefault();createTab()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="l"){e.preventDefault();$("address").focus();$("address").select()}});
 createTab();
 // Pacific Explorer deep links from the CloudFront arcade shell.
-const launchTarget=new URLSearchParams(location.search).get("url");
+const launchParams=new URLSearchParams(location.search);
+const launchTarget=launchParams.get("url");
+if(launchParams.get("embed")==="1")document.documentElement.classList.add("pacific-embedded");
 if(launchTarget && /^https?:\/\//i.test(launchTarget)) navigate(launchTarget);
 </script></body></html>
