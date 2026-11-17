@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080706"><title>Pacific Explorer</title>
 <script src="/scram/scramjet.all.js"></script><script src="/baremux/index.js"></script>
-<script src="/register-sw.js" defer></script><script src="/search.js" defer></script>
+<script src="/register-sw.js"></script><script src="/search.js"></script>
 <style>
 :root{color-scheme:dark;--gold:#ffaa00;--gold2:#b57700;--edge:#5c3b05;--bg:#060606;--panel:#100d08;--text:#e9e2d8}
 *{box-sizing:border-box}html,body{margin:0;width:100%;height:100%;background:var(--bg);color:var(--text);font:14px system-ui,Segoe UI,Arial,sans-serif}button,input{font:inherit}button{cursor:pointer;color:#ddd;background:#080808;border:1px solid #3d2b0e;border-radius:9px}button:hover{border-color:var(--gold);color:var(--gold)}button:focus-visible,input:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
@@ -45,6 +45,7 @@ const connection=new BareMux.BareMuxConnection("/baremux/worker.js");
 function notice(msg){$("status").textContent=msg;$("status").classList.add("show");clearTimeout(notice.timer);notice.timer=setTimeout(()=>$("status").classList.remove("show"),6500)}
 function resolveAddress(input){const q=input.trim();if(!q)return "";if(/^javascript:|^data:|^file:/i.test(q))throw Error("This URL scheme is not supported.");return search(q,"https://duckduckgo.com/?q=%s")}
 async function ensureProxy(){
+ if(typeof registerSW!=="function")throw new Error("Scramjet service worker helper is unavailable. Reload the browser.");
  if(ready)return ready;
  ready=(async()=>{
   await registerSW();
@@ -94,7 +95,7 @@ if(launchParams.get("embed")==="1")document.documentElement.classList.add("pacif
 
 // Embedded Arcade integration: register the proxy once, then accept searches without recreating the browser.
 const isArcadeEmbed=launchParams.get("embed")==="1";
-function notifyArcade(event,message=""){if(!isArcadeEmbed||window.parent===window)return;window.parent.postMessage({source:"pacific-explorer",event,message},"*")}
+function notifyArcade(event,message=""){if(!isArcadeEmbed||window.parent===window)return;window.parent.postMessage({source:"pacific-explorer",event,message},document.referrer?new URL(document.referrer).origin:"*")}
 if(isArcadeEmbed){
   // Send readiness only after the service worker and Wisp transport are prepared.
   ensureProxy().then(()=>notifyArcade("ready")).catch(e=>notifyArcade("error",e?.message||String(e)));
