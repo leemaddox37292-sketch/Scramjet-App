@@ -143,6 +143,32 @@ fastify.get("/api/genre-songs", async (request, reply) => {
   return reply.code(503).send({ error: "genre chart unavailable" });
 });
 
+
+fastify.get("/api/tmdb/tv/:id/season/:season", async (request, reply) => {
+  reply.header("Access-Control-Allow-Origin", "*");
+  reply.header("Cross-Origin-Resource-Policy", "cross-origin");
+  reply.header("Cache-Control", "public, max-age=3600");
+  const id=String(request.params.id), season=String(request.params.season);
+  if (!/^\\d{1,12}$/.test(id) || !/^\\d{1,3}$/.test(season)) return reply.code(400).send({error:"invalid tv id or season"});
+  const token=process.env.TMDB_READ_TOKEN || process.env.TMDB_API_READ_ACCESS_TOKEN;
+  const apiKey=process.env.TMDB_API_KEY;
+  if (!token && !apiKey) return reply.code(503).send({error:"tmdb metadata not configured"});
+  try {
+    const url=new URL("https://api.themoviedb.org/3/tv/"+id+"/season/"+season);
+    url.searchParams.set("language","en-US");
+    if (!token) url.searchParams.set("api_key",apiKey);
+    const headers={Accept:"application/json"};
+    if (token) headers.Authorization="Bearer "+token;
+    const upstream=await fetch(url,{headers,signal:AbortSignal.timeout(9000)});
+    if (!upstream.ok) return reply.code(upstream.status).send({error:"tmdb metadata unavailable"});
+    const data=await upstream.json();
+    const episodes=(Array.isArray(data.episodes)?data.episodes:[])
+      .filter(e=>Number.isInteger(e.episode_number)&&e.episode_number>0)
+      .map(e=>({number:e.episode_number,name:e.name||"",overview:e.overview||"",airdate:e.air_date||"",still:e.still_path?"https://image.tmdb.org/t/p/w500"+e.still_path:""}));
+    return {source:"tmdb",season:Number(season),episodes};
+  } catch(error) {request.log.warn({error:String(error)},"tmdb season metadata failed");return reply.code(502).send({error:"tmdb metadata request failed"});}
+});
+
 fastify.setNotFoundHandler((res, reply) => {
 	return reply.code(404).type("text/html").sendFile("404.html");
 });
