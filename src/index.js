@@ -247,6 +247,35 @@ fastify.get("/api/tmdb/title-logo", async (request, reply) => {
   return result;
 });
 
+
+let arcadeGamesApiCache={data:null,expires:0};
+fastify.get("/api/arcade-games",async(request,reply)=>{
+ reply.header("Access-Control-Allow-Origin","*");
+ reply.header("Cross-Origin-Resource-Policy","cross-origin");
+ reply.header("Cache-Control","public,max-age=300");
+ if(arcadeGamesApiCache.data&&Date.now()<arcadeGamesApiCache.expires)return arcadeGamesApiCache.data;
+ const sources={
+  tglsc:"https://glseries.net/api/cdn",
+  seraph:"https://cdn.jsdelivr.net/gh/skibbsz/seraph@main/games.json",
+  truffled:"https://cdn.jsdelivr.net/gh/susansigma/truffled.github.io@main/games.html"
+ };
+ const results=await Promise.allSettled(Object.entries(sources).map(async([name,url])=>{
+  const response=await fetch(url,{signal:AbortSignal.timeout(10500),headers:{Accept:name==="truffled"?"text/html":"application/json", "User-Agent":"PacificArcade/1.0"}});
+  if(!response.ok)throw Error(name+" HTTP "+response.status);
+  const body=name==="truffled"?await response.text():await response.json();
+  return [name,body];
+ }));
+ const data={};
+ results.forEach((r,i)=>{if(r.status==="fulfilled")data[r.value[0]]=r.value[1];else request.log.warn({source:Object.keys(sources)[i],error:String(r.reason)},"game catalog failed")});
+ if(!Object.keys(data).length){
+  if(arcadeGamesApiCache.data)return arcadeGamesApiCache.data;
+  return reply.code(503).send({error:"game catalog providers unavailable"});
+ }
+ const result={sources:data,updatedAt:new Date().toISOString()};
+ arcadeGamesApiCache={data:result,expires:Date.now()+15*60*1000};
+ return result;
+});
+
 fastify.setNotFoundHandler((res, reply) => {
 	return reply.code(404).type("text/html").sendFile("404.html");
 });
