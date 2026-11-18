@@ -276,6 +276,49 @@ fastify.get("/api/arcade-games",async(request,reply)=>{
  return result;
 });
 
+
+let pacificTungGamesCache={games:null,expires:0};
+fastify.get("/api/tungtung-games",async(request,reply)=>{
+  reply.header("Access-Control-Allow-Origin","*");
+  reply.header("Cross-Origin-Resource-Policy","cross-origin");
+  reply.header("Cache-Control","public,max-age=300");
+  if(pacificTungGamesCache.games&&pacificTungGamesCache.expires>Date.now())return {games:pacificTungGamesCache.games,source:"tungtung",cached:true};
+  const origin="https://tungtung.baby";
+  const catalogs=["tglsc.json","custom.json","gn-math.json","seraph.json"];
+  const responses=await Promise.allSettled(catalogs.map(async filename=>{
+    const response=await fetch(origin+"/"+filename,{signal:AbortSignal.timeout(9500),headers:{Accept:"application/json", "User-Agent":"Mozilla/5.0 PacificArcade/1.0"}});
+    if(!response.ok)throw new Error(filename+" HTTP "+response.status);
+    const data=await response.json();
+    if(!Array.isArray(data))throw new Error(filename+" is not an array");
+    return {filename,data};
+  }));
+  const results=[],seen=new Set(),errors=[];
+  for(let i=0;i<responses.length;i++){
+    const result=responses[i];
+    if(result.status!=="fulfilled"){errors.push(catalogs[i]+": "+String(result.reason));continue}
+    for(const row of result.value.data){
+      if(!row||typeof row.name!=="string"||typeof row.url!=="string")continue;
+      try{
+        // The site's own catalog uses root-relative game and cover URLs.
+        const url=new URL(row.url,origin);
+        if(!["https:","http:"].includes(url.protocol))continue;
+        const image=row.image?new URL(row.image,origin):null;
+        const key=url.href;
+        if(seen.has(key))continue;
+        seen.add(key);
+        results.push({name:row.name,url:key,image:image&&["https:","http:"].includes(image.protocol)?image.href:"",category:row.category||result.value.filename.replace(".json","")});
+      }catch{}
+    }
+  }
+  if(results.length){
+    pacificTungGamesCache={games:results,expires:Date.now()+20*60*1000};
+    return {games:results,source:"tungtung",count:results.length,partial:errors.length>0};
+  }
+  if(pacificTungGamesCache.games)return {games:pacificTungGamesCache.games,source:"tungtung",cached:true,stale:true};
+  request.log.warn({errors},"tungtung catalogs unavailable");
+  return reply.code(503).send({games:[],error:"Tungtung catalogs unavailable",sources:catalogs});
+});
+
 fastify.setNotFoundHandler((res, reply) => {
 	return reply.code(404).type("text/html").sendFile("404.html");
 });
