@@ -5,6 +5,7 @@ import { server as wisp, logging } from "@mercuryworkshop/wisp-js/server";
 import Fastify from "fastify";
 import fastifyStatic from "@fastify/static";
 
+import { uvPath } from "@titaniumnetwork-dev/ultraviolet";
 import { scramjetPath } from "@mercuryworkshop/scramjet/path";
 import { epoxyPath } from "@mercuryworkshop/epoxy-transport";
 import { libcurlPath } from "@mercuryworkshop/libcurl-transport";
@@ -41,6 +42,11 @@ fastify.register(fastifyStatic, {
 	decorateReply: true,
 });
 
+fastify.register(fastifyStatic, {
+	root: uvPath,
+	prefix: "/uv/",
+	decorateReply: false,
+});
 fastify.register(fastifyStatic, {
 	root: scramjetPath,
 	prefix: "/scram/",

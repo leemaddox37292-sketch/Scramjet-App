@@ -2,6 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#080706"><title>Pacific Explorer</title>
+<script src="/uv/uv.bundle.js"></script><script src="/arcade-uv-config.js"></script>
 <script src="/scram/scramjet.all.js"></script><script src="/baremux/index.js"></script>
 <script src="/register-sw.js"></script><script src="/search.js"></script>
 <style>
@@ -39,9 +40,39 @@ h1{color:var(--gold);font-size:clamp(31px,5vw,48px);letter-spacing:.29em;font-we
 "use strict";
 const $=id=>document.getElementById(id);
 const tabs=[];let active=null,sequence=0,ready=null;
-const {ScramjetController}=$scramjetLoadController();
-const controller=new ScramjetController({files:{wasm:"/scram/scramjet.wasm.wasm",all:"/scram/scramjet.all.js",sync:"/scram/scramjet.sync.js"}});
-controller.init();
+const launchParams=new URLSearchParams(location.search);
+const engine=launchParams.get("engine")==="ultraviolet"?"ultraviolet":"scramjet";
+let controller;
+if(engine==="scramjet"){
+ const {ScramjetController}=$scramjetLoadController();
+ controller=new ScramjetController({files:{wasm:"/scram/scramjet.wasm.wasm",all:"/scram/scramjet.all.js",sync:"/scram/scramjet.sync.js"}});
+ controller.init();
+}
+async function registerUltraviolet(){
+ const registration=await navigator.serviceWorker.register("/arcade-uv-worker.js",{scope:__uv$config.prefix});
+ if(registration.active?.state==="activated")return;
+ const worker=registration.installing||registration.waiting||registration.active;
+ if(!worker)throw new Error("ultraviolet worker is unavailable");
+ await new Promise((resolve,reject)=>{
+  const timer=setTimeout(()=>finish(new Error("ultraviolet worker activation timed out")),9000);
+  function finish(error){
+   clearTimeout(timer);
+   worker.removeEventListener("statechange",check);
+   if(error)reject(error);else resolve();
+  }
+  function check(){
+   if(worker.state==="activated")finish();
+   if(worker.state==="redundant")finish(new Error("ultraviolet worker failed to start"));
+  }
+  worker.addEventListener("statechange",check);
+  check();
+ });
+}
+function createProxyFrame(){
+ if(controller)return controller.createFrame();
+ const frame=document.createElement("iframe");
+ return {frame,go(url){frame.src=__uv$config.prefix+__uv$config.encodeUrl(url)}};
+}
 const connection=new BareMux.BareMuxConnection("/baremux/worker.js");
 function notice(msg){$("status").textContent=msg;$("status").classList.add("show");clearTimeout(notice.timer);notice.timer=setTimeout(()=>$("status").classList.remove("show"),6500)}
 function resolveAddress(input){const q=input.trim();if(!q)return "";if(/^javascript:|^data:|^file:/i.test(q))throw Error("This URL scheme is not supported.");return search(q,"https://duckduckgo.com/?q=%s")}
@@ -49,9 +80,11 @@ async function ensureProxy(){
  if(typeof registerSW!=="function")throw new Error("Scramjet service worker helper is unavailable. Reload the browser.");
  if(ready)return ready;
  ready=(async()=>{
-  await registerSW();
-  // Wait for SW activation before the first proxied navigation.
-  await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error("Service worker activation was blocked; open Pacific Explorer in a new window.")),9000))]);
+  if(engine==="ultraviolet")await registerUltraviolet();
+  else{
+   await registerSW();
+   await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error("Service worker activation was blocked; open Pacific Explorer in a new window.")),9000))]);
+  }
   const wisp=(location.protocol==="https:"?"wss":"ws")+"://"+location.host+"/wisp/";
   const useEpoxy=new URLSearchParams(location.search).get("transport")==="epoxy";
   const modulePath=useEpoxy?"/epoxy/index.mjs":"/libcurl/index.mjs";
@@ -80,7 +113,7 @@ function activate(tab){active=tab;for(const t of tabs){const yes=t===tab;t.page.
 function closeTab(tab){const i=tabs.indexOf(tab);if(i<0)return;tabs.splice(i,1);tab.page.remove();tab.button.remove();if(active===tab){if(tabs.length)activate(tabs[Math.min(i,tabs.length-1)]);else createTab()}}
 async function navigate(value){const tab=active;if(!tab)return;let url;try{url=resolveAddress(value)}catch(e){notice(e.message);return}if(!url)return;tab.url=url;tab.title=(()=>{try{return new URL(url).hostname}catch{return "Search"}})();tab.label.textContent=tab.title;$("address").value=url;$("loading").style.display="block";
  try{await ensureProxy();if(!tabs.includes(tab))return;
-   if(!tab.proxy){tab.page.replaceChildren();tab.proxy=controller.createFrame();tab.proxy.frame.title="Browser: "+tab.title;tab.proxy.frame.tabIndex=0;tab.proxy.frame.style.pointerEvents="auto";tab.proxy.frame.style.touchAction="auto";tab.page.append(tab.proxy.frame)}
+   if(!tab.proxy){tab.page.replaceChildren();tab.proxy=createProxyFrame();tab.proxy.frame.title="Browser: "+tab.title;tab.proxy.frame.tabIndex=0;tab.proxy.frame.style.pointerEvents="auto";tab.proxy.frame.style.touchAction="auto";tab.page.append(tab.proxy.frame)}
    tab.proxy.go(url);
  }catch(e){notice("Proxy could not load: "+(e?.message||String(e)))}finally{$("loading").style.display="none"}
 }
@@ -107,7 +140,6 @@ $("open").onclick=()=>window.open(location.href,"_blank","noopener,noreferrer");
 window.addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="t"){e.preventDefault();createTab()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="l"){e.preventDefault();$("address").focus();$("address").select()}});
 createTab();
 // Pacific Explorer deep links from the CloudFront arcade shell.
-const launchParams=new URLSearchParams(location.search);
 const launchTarget=launchParams.get("url");
 if(launchParams.get("embed")==="1")document.documentElement.classList.add("pacific-embedded");
 
@@ -115,7 +147,7 @@ if(launchParams.get("embed")==="1")document.documentElement.classList.add("pacif
 const isPlayerEmbed=launchParams.get("player")==="1";
 if(isPlayerEmbed)document.documentElement.classList.add("pacific-embedded");
 const isArcadeEmbed=launchParams.get("embed")==="1";
-function notifyArcade(event,message=""){if(!isArcadeEmbed||window.parent===window)return;window.parent.postMessage({source:"pacific-explorer",event,message},document.referrer?new URL(document.referrer).origin:"*")}
+function notifyArcade(event,message=""){if(!isArcadeEmbed||window.parent===window)return;window.parent.postMessage({source:"pacific-explorer",event,message,engine},document.referrer?new URL(document.referrer).origin:"*")}
 if(isArcadeEmbed){
   // Send readiness only after the service worker and Wisp transport are prepared.
   ensureProxy().then(()=>notifyArcade("ready")).catch(e=>notifyArcade("error",e?.message||String(e)));
