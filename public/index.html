@@ -53,7 +53,10 @@ async function ensureProxy(){
   // Wait for SW activation before the first proxied navigation.
   await Promise.race([navigator.serviceWorker.ready,new Promise((_,reject)=>setTimeout(()=>reject(Error("Service worker activation was blocked; open Pacific Explorer in a new window.")),9000))]);
   const wisp=(location.protocol==="https:"?"wss":"ws")+"://"+location.host+"/wisp/";
-  if((await connection.getTransport())!=="/libcurl/index.mjs")await connection.setTransport("/libcurl/index.mjs",[{websocket:wisp}]);
+  const useEpoxy=new URLSearchParams(location.search).get("transport")==="epoxy";
+  const modulePath=useEpoxy?"/epoxy/index.mjs":"/libcurl/index.mjs";
+  const options=useEpoxy?{wisp}:{websocket:wisp};
+  if((await connection.getTransport())!==modulePath)await connection.setTransport(modulePath,[options]);
  })().catch(e=>{ready=null;throw e});
  return ready;
 }

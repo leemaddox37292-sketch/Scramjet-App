@@ -14,6 +14,9 @@ importers:
       '@mercuryworkshop/bare-mux':
         specifier: ^2.1.9
         version: 2.1.9
+      '@mercuryworkshop/epoxy-transport':
+        specifier: 2.1.29
+        version: 2.1.29
       '@mercuryworkshop/libcurl-transport':
         specifier: ^1.5.2
         version: 1.5.2
@@ -122,6 +125,13 @@ packages:
 
   '@mercuryworkshop/bare-mux@2.1.9':
     resolution: {integrity: sha512-fiOqWm3VP0Bl8T+0l+qnb7ab9zO+PpKVbtJvOnMsefUv6kWIaoDtqyr9hd/t4gA8oBwgtyZVqIwO2J9nKY9ylw==}
+    deprecated: this is deprecated and will no longer be recieving updates, please use proxy-transports instead
+
+  '@mercuryworkshop/epoxy-tls@2.1.20-1':
+    resolution: {integrity: sha512-4xRxm8KGcLdHpVrTC2SG0+7khJFH6J6z6XlUsBJSb6Prj3ejVtsVbiWmGkZQcza+F9JZIKmL+i3KC9hHryZ01Q==}
+
+  '@mercuryworkshop/epoxy-transport@2.1.29':
+    resolution: {integrity: sha512-W2aBRKnOfrC0DJd/7Ms2l+vCymNpDMq1L2ck7MfCGUtQ5Kn2EkHIB6JisL7oWl3BqOpD34klQmFpxdgRRGEr6A==}
 
   '@mercuryworkshop/libcurl-transport@1.5.2':
     resolution: {integrity: sha512-E0tD/3W6HE99ypc7CStpchU6xs+TP5u2vms/9q/46BShblB2pbRCNeXHBlvXqdz97nh2Xh4A68DryDt5CM29Dg==}
@@ -303,6 +313,7 @@ packages:
   eslint@9.13.0:
     resolution: {integrity: sha512-EYZK6SX6zjFHST/HRytOdA/zE72Cq/bfw45LSyuwrdvcclb/gqV8RRQxywOBEWO2+WDpva6UZa4CcDeJKzUCFA==}
     engines: {node: ^18.18.0 || ^20.9.0 || >=21.1.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
     peerDependencies:
       jiti: '*'
@@ -818,6 +829,12 @@ snapshots:
   '@lukeed/ms@2.0.2': {}
 
   '@mercuryworkshop/bare-mux@2.1.9': {}
+
+  '@mercuryworkshop/epoxy-tls@2.1.20-1': {}
+
+  '@mercuryworkshop/epoxy-transport@2.1.29':
+    dependencies:
+      '@mercuryworkshop/epoxy-tls': 2.1.20-1
 
   '@mercuryworkshop/libcurl-transport@1.5.2':
     dependencies:
